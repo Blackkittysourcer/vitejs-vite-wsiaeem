@@ -443,53 +443,40 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {filtered.filter(r => {
-              const hasNote = [1,2,3,4].some(i => r[`note${i}`]?.trim());
-              return hasNote || r.q5;
-            }).length === 0 && (
+            {filtered.filter(r => r.q1).length === 0 && (
               <div style={{ color: "#6b7a99", textAlign: "center", padding: 40, fontSize: 14 }}>No written comments for this filter.</div>
             )}
             {[...filtered].sort((a, b) => {
               const da = new Date(a.date), db = new Date(b.date);
               return dateSort === "desc" ? db - da : da - db;
             }).map((r, ri) => {
-              // Collect all notes for this candidate
-              const notes = [];
-              [1, 2, 3, 4].forEach(i => {
-                if (r[`note${i}`]?.trim()) {
-                  notes.push({ q: QUESTIONS[i-1].full, text: r[`note${i}`], score: toScore(r[`q${i}`]) });
-                }
-              });
-              if (r.q5) {
-                notes.push({
-                  q: QUESTIONS[4].full,
-                  text: r.note5?.trim() ? r.note5 : `Rated: ${r.q5}`,
-                  score: toScore(r.q5)
-                });
-              }
-              if (notes.length === 0) return null;
+              const notes = QUESTIONS.map((q, i) => ({
+                q: q.full,
+                rating: r[`q${i+1}`],
+                text: r[`note${i+1}`]?.trim() || "",
+                score: toScore(r[`q${i+1}`])
+              })).filter(n => n.rating);
 
-              const overallScore = notes.map(n => n.score).filter(Boolean);
-              const candidateAvg = overallScore.length ? Math.round(overallScore.reduce((a,b) => a+b, 0) / overallScore.length) : null;
+              if (notes.length === 0) return null;
 
               return (
                 <div key={ri} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 12, overflow: "hidden" }}>
-                  {/* Candidate header */}
                   <div style={{ padding: "12px 18px", background: "#0f1117", borderBottom: "1px solid #1e2d3d", display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "#c8d4e8" }}>{r.dept}</span>
                     <span style={{ fontSize: 11, color: "#6b7a99" }}>{r.date}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#6b7a99" }}>{notes.length} comment{notes.length !== 1 ? "s" : ""}</span>
                   </div>
-                  {/* All notes from this candidate */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                     {notes.map((note, ni) => (
                       <div key={ni} style={{
-                        padding: "14px 18px",
+                        padding: "12px 18px",
                         borderBottom: ni < notes.length - 1 ? "1px solid #1e2d3d" : "none",
                         borderLeft: `3px solid ${SCORE_COLOR[note.score] || "#4a9eff"}`
                       }}>
-                        <div style={{ fontSize: 11, color: "#4a9eff", marginBottom: 6 }}>{note.q}</div>
-                        <div style={{ fontSize: 13, color: "#c8d4e8", lineHeight: 1.7 }}>{note.text}</div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: note.text ? 6 : 0 }}>
+                          <div style={{ fontSize: 11, color: "#6b7a99", flex: 1, paddingRight: 12 }}>{note.q}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: SCORE_COLOR[note.score] || "#8896b3", flexShrink: 0, background: "#0f1117", padding: "2px 8px", borderRadius: 4 }}>{note.rating}</div>
+                        </div>
+                        {note.text && <div style={{ fontSize: 13, color: "#c8d4e8", lineHeight: 1.7 }}>{note.text}</div>}
                       </div>
                     ))}
                   </div>
