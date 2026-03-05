@@ -142,14 +142,12 @@ export default function Dashboard() {
     setSaving(true);
     setSaveStatus("");
     try {
-      // Delete old data first
-      await sbFetch("survey_responses?id=gte.0", { method: "DELETE" });
-      // Insert new
       const res = await sbFetch("survey_responses", {
         method: "POST",
-        body: JSON.stringify({ data: parsed })
+        headers: { "Prefer": "resolution=merge-duplicates" },
+        body: JSON.stringify({ id: 1, data: parsed })
       });
-      if (res.ok) setSaveStatus("saved");
+      if (res.ok || res.status === 201) setSaveStatus("saved");
       else setSaveStatus("error");
     } catch (e) {
       setSaveStatus("error");
