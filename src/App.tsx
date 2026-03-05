@@ -114,45 +114,82 @@ export default function Dashboard() {
   const [fileName, setFileName] = useState("");
   const [dateSort, setDateSort] = useState("desc");
   const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(""); // "saved" | "error" | ""
+  const [saveStatus, setSaveStatus] = useState("");
+  const [reports, setReports] = useState([]);
+  const [activeReport, setActiveReport] = useState(null);
+  const [reportName, setReportName] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
-  // Load latest data from Supabase on mount
+  // Load all reports from Supabase on mount
   useEffect(() => {
-    async function loadFromSupabase() {
+    async function loadReports() {
       try {
-        const res = await sbFetch("survey_responses?select=data,uploaded_at&order=uploaded_at.desc&limit=1", {
+        const res = await sbFetch("survey_responses?select=id,name,uploaded_at&order=uploaded_at.desc", {
           headers: { "Accept": "application/json" }
         });
         if (!res.ok) return;
         const rows = await res.json();
+        setReports(rows);
         if (rows.length > 0) {
-          setData(rows[0].data);
-          const t = new Date(rows[0].uploaded_at).toLocaleString("en-US");
-          setLastUpdated(t);
-          setActiveTab("overview");
+          loadReport(rows[0].id, rows[0].name, rows[0].uploaded_at);
         }
-      } catch (e) {
-        console.error("Failed to load from Supabase", e);
-      }
+      } catch (e) { console.error(e); }
     }
-    loadFromSupabase();
+    loadReports();
   }, []);
 
-  const saveToSupabase = async (parsed) => {
+  const loadReport = async (id, name, uploadedAt) => {
+    try {
+      const res = await sbFetch(`survey_responses?id=eq.${id}&select=data`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (!res.ok) return;
+      const rows = await res.json();
+      if (rows.length > 0) {
+        setData(rows[0].data);
+        setActiveReport({ id, name });
+        setLastUpdated(new Date(uploadedAt).toLocaleString("en-US"));
+        setActiveTab("overview");
+        setActiveDept("All");
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const saveToSupabase = async (parsed, name) => {
     setSaving(true);
     setSaveStatus("");
     try {
       const res = await sbFetch("survey_responses", {
         method: "POST",
-        headers: { "Prefer": "resolution=merge-duplicates" },
-        body: JSON.stringify({ id: 1, data: parsed })
+        body: JSON.stringify({ name, data: parsed })
       });
-      if (res.ok || res.status === 201) setSaveStatus("saved");
-      else setSaveStatus("error");
+      if (res.ok || res.status === 201) {
+        setSaveStatus("saved");
+        // Refresh reports list
+        const r2 = await sbFetch("survey_responses?select=id,name,uploaded_at&order=uploaded_at.desc", {
+          headers: { "Accept": "application/json" }
+        });
+        const rows = await r2.json();
+        setReports(rows);
+        if (rows.length > 0) setActiveReport({ id: rows[0].id, name: rows[0].name });
+      } else {
+        setSaveStatus("error");
+      }
     } catch (e) {
       setSaveStatus("error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteReport = async (id) => {
+    await sbFetch(`survey_responses?id=eq.${id}`, { method: "DELETE" });
+    const remaining = reports.filter(r => r.id !== id);
+    setReports(remaining);
+    if (activeReport?.id === id) {
+      if (remaining.length > 0) loadReport(remaining[0].id, remaining[0].name, remaining[0].uploaded_at);
+      else { setData([]); setActiveReport(null); setActiveTab("setup"); }
     }
   };
 
@@ -171,7 +208,9 @@ export default function Dashboard() {
         setData(parsed);
         setLastUpdated(new Date().toLocaleTimeString("en-US"));
         setActiveTab("overview");
-        saveToSupabase(parsed);
+        setPendingData(parsed);
+        setReportName("");
+        setShowSaveModal(true);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -249,6 +288,29 @@ export default function Dashboard() {
 
   return (
     <div style={{ fontFamily: "'Georgia', serif", background: "#0f1117", minHeight: "100vh", color: "#e8e8e8", padding: "0 0 60px" }}>
+
+      {/* Save modal */}
+      {showSaveModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 12, padding: 28, width: 380 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8 }}>Name this report</div>
+            <div style={{ fontSize: 13, color: "#6b7a99", marginBottom: 16 }}>e.g. "January 2026" or "Q1 2026"</div>
+            <input
+              autoFocus
+              value={reportName}
+              onChange={e => setReportName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && reportName.trim()) { saveToSupabase(pendingData, reportName.trim()); setShowSaveModal(false); }}}
+              placeholder="Report name..."
+              style={{ width: "100%", background: "#0f1117", border: "1px solid #1e2d3d", borderRadius: 6, color: "#e8e8e8", padding: "10px 12px", fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 16 }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowSaveModal(false)} style={{ background: "none", border: "1px solid #1e2d3d", color: "#8896b3", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>Skip</button>
+              <button onClick={() => { if (reportName.trim()) { saveToSupabase(pendingData, reportName.trim()); setShowSaveModal(false); }}} disabled={!reportName.trim()} style={{ background: reportName.trim() ? "#4a9eff" : "#1a2332", border: "none", color: reportName.trim() ? "#fff" : "#6b7a99", padding: "8px 20px", borderRadius: 6, cursor: reportName.trim() ? "pointer" : "default", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ background: "linear-gradient(135deg, #1a2332 0%, #0f1117 60%)", borderBottom: "1px solid #1e2d3d", padding: "28px 36px 0" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
@@ -258,16 +320,35 @@ export default function Dashboard() {
             <div style={{ fontSize: 13, color: "#6b7a99", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
               {data.length > 0 ? `${data.length} responses · last updated ${lastUpdated}` : "Upload a Greenhouse CSV export to view analytics"}
               {saving && <span style={{ fontSize: 11, color: "#eab308" }}>● Saving...</span>}
-              {saveStatus === "saved" && <span style={{ fontSize: 11, color: "#22c55e" }}>● Saved to cloud</span>}
+              {saveStatus === "saved" && <span style={{ fontSize: 11, color: "#22c55e" }}>● Saved</span>}
               {saveStatus === "error" && <span style={{ fontSize: 11, color: "#ef4444" }}>● Save failed</span>}
             </div>
           </div>
-          {nps !== null && (
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Candidate NPS</div>
-              <div style={{ fontSize: 48, fontWeight: 700, color: nps >= 50 ? "#22c55e" : nps >= 0 ? "#eab308" : "#ef4444", lineHeight: 1 }}>{nps > 0 ? "+" : ""}{nps}</div>
-            </div>
-          )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            {nps !== null && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Candidate NPS</div>
+                <div style={{ fontSize: 48, fontWeight: 700, color: nps >= 50 ? "#22c55e" : nps >= 0 ? "#eab308" : "#ef4444", lineHeight: 1 }}>{nps > 0 ? "+" : ""}{nps}</div>
+              </div>
+            )}
+            {/* Reports selector */}
+            {reports.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#6b7a99" }}>Report:</span>
+                <select
+                  value={activeReport?.id || ""}
+                  onChange={e => {
+                    const r = reports.find(r => r.id === parseInt(e.target.value));
+                    if (r) loadReport(r.id, r.name, r.uploaded_at);
+                  }}
+                  style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }}
+                >
+                  {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+                <button onClick={() => activeReport && deleteReport(activeReport.id)} style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+              </div>
+            )}
+          </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           {tabs.map(t => (
