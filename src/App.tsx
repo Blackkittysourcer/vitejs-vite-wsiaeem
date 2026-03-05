@@ -1,6 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=minimal",
+      ...(options.headers || {})
+    }
+  });
+  return res;
+}
+
 const SCORE_MAP = { "Strongly Disagree": 1, "Disagree": 2, "Neutral": 3, "Agree": 4, "Strongly Agree": 5 };
 const SCORE_COLOR = { 1: "#ef4444", 2: "#f97316", 3: "#eab308", 4: "#22c55e", 5: "#16a34a" };
 
@@ -96,6 +113,50 @@ export default function Dashboard() {
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState("");
   const [dateSort, setDateSort] = useState("desc");
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(""); // "saved" | "error" | ""
+
+  // Load latest data from Supabase on mount
+  useEffect(() => {
+    async function loadFromSupabase() {
+      try {
+        const res = await sbFetch("survey_responses?select=data,uploaded_at&order=uploaded_at.desc&limit=1", {
+          headers: { "Accept": "application/json" }
+        });
+        if (!res.ok) return;
+        const rows = await res.json();
+        if (rows.length > 0) {
+          setData(rows[0].data);
+          const t = new Date(rows[0].uploaded_at).toLocaleString("en-US");
+          setLastUpdated(t);
+          setActiveTab("overview");
+        }
+      } catch (e) {
+        console.error("Failed to load from Supabase", e);
+      }
+    }
+    loadFromSupabase();
+  }, []);
+
+  const saveToSupabase = async (parsed) => {
+    setSaving(true);
+    setSaveStatus("");
+    try {
+      // Delete old data first
+      await sbFetch("survey_responses?id=gte.0", { method: "DELETE" });
+      // Insert new
+      const res = await sbFetch("survey_responses", {
+        method: "POST",
+        body: JSON.stringify({ data: parsed })
+      });
+      if (res.ok) setSaveStatus("saved");
+      else setSaveStatus("error");
+    } catch (e) {
+      setSaveStatus("error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -112,6 +173,7 @@ export default function Dashboard() {
         setData(parsed);
         setLastUpdated(new Date().toLocaleTimeString("en-US"));
         setActiveTab("overview");
+        saveToSupabase(parsed);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -195,8 +257,11 @@ export default function Dashboard() {
           <div>
             <div style={{ fontSize: 11, letterSpacing: 3, color: "#4a9eff", fontFamily: "monospace", marginBottom: 6, textTransform: "uppercase" }}>Readdle · Greenhouse ATS</div>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400, color: "#fff", letterSpacing: -0.5 }}>Candidate Survey Analytics</h1>
-            <div style={{ fontSize: 13, color: "#6b7a99", marginTop: 4 }}>
-            {data.length > 0 ? `${data.length} responses · last updated at ${lastUpdated}` : "Upload a Greenhouse CSV export to view analytics"}
+            <div style={{ fontSize: 13, color: "#6b7a99", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              {data.length > 0 ? `${data.length} responses · last updated ${lastUpdated}` : "Upload a Greenhouse CSV export to view analytics"}
+              {saving && <span style={{ fontSize: 11, color: "#eab308" }}>● Saving...</span>}
+              {saveStatus === "saved" && <span style={{ fontSize: 11, color: "#22c55e" }}>● Saved to cloud</span>}
+              {saveStatus === "error" && <span style={{ fontSize: 11, color: "#ef4444" }}>● Save failed</span>}
             </div>
           </div>
           {nps !== null && (
