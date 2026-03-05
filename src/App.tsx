@@ -95,6 +95,7 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [dateSort, setDateSort] = useState("desc");
 
   const handleFile = useCallback((file) => {
     if (!file) return;
@@ -429,13 +430,29 @@ export default function Dashboard() {
         {/* FEEDBACK TAB */}
         {activeTab === "feedback" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Sort controls */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#6b7a99" }}>Sort by date:</span>
+              {[["Newest first", "desc"], ["Oldest first", "asc"]].map(([label, val]) => (
+                <button key={val} onClick={() => setDateSort(val)} style={{
+                  background: dateSort === val ? "#4a9eff" : "#1a2332",
+                  border: `1px solid ${dateSort === val ? "#4a9eff" : "#1e2d3d"}`,
+                  color: dateSort === val ? "#fff" : "#8896b3",
+                  padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "inherit"
+                }}>{label}</button>
+              ))}
+            </div>
+
             {filtered.filter(r => {
               const hasNote = [1,2,3,4].some(i => r[`note${i}`]?.trim());
               return hasNote || r.q5;
             }).length === 0 && (
               <div style={{ color: "#6b7a99", textAlign: "center", padding: 40, fontSize: 14 }}>No written comments for this filter.</div>
             )}
-            {filtered.map((r, ri) => {
+            {[...filtered].sort((a, b) => {
+              const da = new Date(a.date), db = new Date(b.date);
+              return dateSort === "desc" ? db - da : da - db;
+            }).map((r, ri) => {
               // Collect all notes for this candidate
               const notes = [];
               [1, 2, 3, 4].forEach(i => {
