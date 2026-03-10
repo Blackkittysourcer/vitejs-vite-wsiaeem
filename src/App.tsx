@@ -434,7 +434,7 @@ export default function Dashboard() {
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && data.length > 0 && (
           <div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 28 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
               {qAvgs.map((q, i) => (
                 <div key={i} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: "16px 14px", borderTop: `3px solid ${q.color}` }}>
                   <div style={{ fontSize: 32, fontWeight: 700, color: q.color, lineHeight: 1 }}>{q.avg ?? "—"}</div>
