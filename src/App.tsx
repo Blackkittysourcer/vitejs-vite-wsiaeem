@@ -229,10 +229,21 @@ export default function Dashboard() {
 
   const handleInputChange = (e) => handleFile(e.target.files[0]);
 
+  const toComparableDate = (d) => {
+    if (!d) return "";
+    // Handle MM/DD/YYYY format from GH
+    if (d.includes("/")) {
+      const [m, day, y] = d.split("/");
+      return `${y}-${m.padStart(2,"0")}-${day.padStart(2,"0")}`;
+    }
+    return d;
+  };
+
   const filtered = data.filter(r => {
     if (activeDept !== "All" && r.dept !== activeDept) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
+    const rDate = toComparableDate(r.date);
+    if (dateFrom && rDate < dateFrom) return false;
+    if (dateTo && rDate > dateTo) return false;
     return true;
   });
   const depts = ["All", ...Array.from(new Set(data.map(r => r.dept))).filter(Boolean).sort()];
