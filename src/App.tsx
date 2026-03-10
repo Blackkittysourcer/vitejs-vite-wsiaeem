@@ -26,7 +26,6 @@ const QUESTIONS = [
   { key: "q2", short: "Role Clarity", full: "The role and expectations were clearly explained." },
   { key: "q3", short: "Interviewer Quality", full: "The interviewers were well prepared and conducted the conversation professionally." },
   { key: "q4", short: "Opportunity to Shine", full: "The interview process gave me an opportunity to present my strengths." },
-  { key: "q5", short: "Nothing to Improve", full: "Is there anything you wish Readdle had done differently?" },
 ];
 
 const avg = (arr) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : "—";
@@ -113,6 +112,8 @@ export default function Dashboard() {
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState("");
   const [dateSort, setDateSort] = useState("desc");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [reports, setReports] = useState([]);
@@ -228,7 +229,12 @@ export default function Dashboard() {
 
   const handleInputChange = (e) => handleFile(e.target.files[0]);
 
-  const filtered = activeDept === "All" ? data : data.filter(r => r.dept === activeDept);
+  const filtered = data.filter(r => {
+    if (activeDept !== "All" && r.dept !== activeDept) return false;
+    if (dateFrom && r.date < dateFrom) return false;
+    if (dateTo && r.date > dateTo) return false;
+    return true;
+  });
   const depts = ["All", ...Array.from(new Set(data.map(r => r.dept))).filter(Boolean).sort()];
 
   const qAvgs = QUESTIONS.map(q => {
@@ -360,11 +366,15 @@ export default function Dashboard() {
             }}>{t === "setup" ? "⚙ Setup" : t.charAt(0).toUpperCase() + t.slice(1)}</button>
           ))}
           {data.length > 0 && (
-            <div style={{ marginLeft: "auto", paddingBottom: 10, display: "flex", gap: 8 }}>
-              <select value={activeDept} onChange={e => setActiveDept(e.target.value)} style={{
-                background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8",
-                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontFamily: "inherit"
-              }}>
+            <div style={{ marginLeft: "auto", paddingBottom: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, color: "#6b7a99" }}>From</span>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "5px 8px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
+              <span style={{ fontSize: 11, color: "#6b7a99" }}>To</span>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "5px 8px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ background: "none", border: "1px solid #1e2d3d", color: "#6b7a99", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>✕ Clear</button>
+              )}
+              <select value={activeDept} onChange={e => setActiveDept(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }}>
                 {depts.map(d => <option key={d}>{d}</option>)}
               </select>
               <label style={{ background: "#1a2332", border: "1px solid #4a9eff", color: "#4a9eff", padding: "6px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
