@@ -318,16 +318,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-            {nps !== null && (
+            {overallAvg && (
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Candidate NPS</div>
-                <div style={{ fontSize: 48, fontWeight: 700, color: nps >= 50 ? "#22c55e" : nps >= 0 ? "#eab308" : "#ef4444", lineHeight: 1 }}>{nps > 0 ? "+" : ""}{nps}</div>
+                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Overall Average</div>
+                <div style={{ fontSize: 48, fontWeight: 700, color: scoreLabel(parseFloat(overallAvg)).color, lineHeight: 1 }}>{overallAvg}<span style={{ fontSize: 20, color: "#6b7a99" }}>/5</span></div>
               </div>
             )}
-            {/* Reports selector */}
             {reports.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: "#6b7a99" }}>Report:</span>
                 <select
                   value={activeReport?.id || ""}
                   onChange={e => {
@@ -460,31 +458,19 @@ export default function Dashboard() {
               </div>
 
               <div style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: 20 }}>
-                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Candidate Sentiment (Q1)</div>
-                <div style={{ display: "flex", gap: 0, height: 20, borderRadius: 6, overflow: "hidden", marginBottom: 20 }}>
-                  {total > 0 && <>
-                    <div style={{ width: `${(promoters / total) * 100}%`, background: "#16a34a" }} />
-                    <div style={{ width: `${(passives / total) * 100}%`, background: "#eab308" }} />
-                    <div style={{ width: `${(detractors / total) * 100}%`, background: "#ef4444" }} />
-                  </>}
-                </div>
-                <div style={{ display: "flex", gap: 20 }}>
-                  {[["Promoters", promoters, "#16a34a", "Strongly Agree"], ["Passives", passives, "#eab308", "Neutral / Agree"], ["Detractors", detractors, "#ef4444", "Disagree / SD"]].map(([label, n, color, sub]) => (
-                    <div key={label}>
-                      <div style={{ fontSize: 28, fontWeight: 700, color }}>{total > 0 ? Math.round((n / total) * 100) : 0}%</div>
-                      <div style={{ fontSize: 12, color: "#c8d4e8" }}>{label}</div>
-                      <div style={{ fontSize: 10, color: "#6b7a99" }}>{sub}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 16, padding: "12px 14px", background: "#0f1117", borderRadius: 8, display: "flex", alignItems: "center", gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: "#6b7a99" }}>Overall avg. score</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: overallAvg ? scoreLabel(parseFloat(overallAvg)).color : "#6b7a99" }}>{overallAvg ?? "—"} / 5</div>
+                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Summary</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 13, color: "#8896b3" }}>Overall avg. score</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: overallAvg ? scoreLabel(parseFloat(overallAvg)).color : "#6b7a99" }}>{overallAvg ?? "—"} <span style={{ fontSize: 14, color: "#6b7a99" }}>/ 5</span></div>
                   </div>
-                  <div style={{ marginLeft: "auto", textAlign: "right" }}>
-                    <div style={{ fontSize: 11, color: "#6b7a99" }}>Responses</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: "#4a9eff" }}>{filtered.length}</div>
+                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 13, color: "#8896b3" }}>Total responses</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: "#4a9eff" }}>{filtered.length}</div>
+                  </div>
+                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ fontSize: 13, color: "#8896b3" }}>Departments</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: "#c8d4e8" }}>{deptData.length}</div>
                   </div>
                 </div>
               </div>
