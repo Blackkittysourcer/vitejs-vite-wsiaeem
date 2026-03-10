@@ -336,7 +336,6 @@ export default function Dashboard() {
                 >
                   {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <button onClick={() => activeReport && deleteReport(activeReport.id)} style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
               </div>
             )}
           </div>
