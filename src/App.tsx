@@ -266,25 +266,12 @@ export default function Dashboard() {
 
   const comments = filtered.flatMap(r => {
     const items = [];
-    // Q1-Q4: show only if there's a written note
     [1, 2, 3, 4].forEach(i => {
       const note = r[`note${i}`];
       if (note && note.trim()) {
         items.push({ dept: r.dept, date: r.date, q: QUESTIONS[i - 1].full, text: note, score: toScore(r[`q${i}`]) });
       }
     });
-    // Q5: always show (it's the open feedback question)
-    const q5score = toScore(r.q5);
-    const q5note = r.note5;
-    if (r.q5) {
-      items.push({
-        dept: r.dept,
-        date: r.date,
-        q: QUESTIONS[4].full,
-        text: q5note && q5note.trim() ? q5note : `Rated: ${r.q5}`,
-        score: q5score
-      });
-    }
     return items;
   });
 
