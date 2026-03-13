@@ -229,10 +229,21 @@ export default function Dashboard() {
 
   const handleInputChange = (e) => handleFile(e.target.files[0]);
 
+  const toComparableDate = (d) => {
+    if (!d) return "";
+    // Handle MM/DD/YYYY format from GH
+    if (d.includes("/")) {
+      const [m, day, y] = d.split("/");
+      return `${y}-${m.padStart(2,"0")}-${day.padStart(2,"0")}`;
+    }
+    return d;
+  };
+
   const filtered = data.filter(r => {
     if (activeDept !== "All" && r.dept !== activeDept) return false;
-    if (dateFrom && r.date < dateFrom) return false;
-    if (dateTo && r.date > dateTo) return false;
+    const rDate = toComparableDate(r.date);
+    if (dateFrom && rDate < dateFrom) return false;
+    if (dateTo && rDate > dateTo) return false;
     return true;
   });
   const depts = ["All", ...Array.from(new Set(data.map(r => r.dept))).filter(Boolean).sort()];
@@ -280,90 +291,93 @@ export default function Dashboard() {
     : ["setup"];
 
   return (
-    <div style={{ fontFamily: "'Georgia', serif", background: "#0f1117", minHeight: "100vh", color: "#e8e8e8", padding: "0 0 60px" }}>
+    <div style={{ fontFamily: "'Georgia', serif", background: "#080c12", minHeight: "100vh", color: "#e2e8f0", padding: "0 0 80px" }}>
 
       {/* Save modal */}
       {showSaveModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 12, padding: 28, width: 380 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8 }}>Name this report</div>
-            <div style={{ fontSize: 13, color: "#6b7a99", marginBottom: 16 }}>e.g. "January 2026" or "Q1 2026"</div>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, backdropFilter: "blur(4px)" }}>
+          <div style={{ background: "#111827", border: "1px solid #1f2d3d", borderRadius: 16, padding: 32, width: 400, boxShadow: "0 24px 60px rgba(0,0,0,0.6)" }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "#f1f5f9", marginBottom: 6 }}>Name this report</div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>e.g. "January 2026" or "Q1 2026"</div>
             <input
               autoFocus
               value={reportName}
               onChange={e => setReportName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && reportName.trim()) { saveToSupabase(pendingData, reportName.trim()); setShowSaveModal(false); }}}
               placeholder="Report name..."
-              style={{ width: "100%", background: "#0f1117", border: "1px solid #1e2d3d", borderRadius: 6, color: "#e8e8e8", padding: "10px 12px", fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 16 }}
+              style={{ width: "100%", background: "#0f172a", border: "1px solid #1f2d3d", borderRadius: 8, color: "#e2e8f0", padding: "11px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box", marginBottom: 20 }}
             />
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setShowSaveModal(false)} style={{ background: "none", border: "1px solid #1e2d3d", color: "#8896b3", padding: "8px 16px", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>Skip</button>
-              <button onClick={() => { if (reportName.trim()) { saveToSupabase(pendingData, reportName.trim()); setShowSaveModal(false); }}} disabled={!reportName.trim()} style={{ background: reportName.trim() ? "#4a9eff" : "#1a2332", border: "none", color: reportName.trim() ? "#fff" : "#6b7a99", padding: "8px 20px", borderRadius: 6, cursor: reportName.trim() ? "pointer" : "default", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>Save</button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowSaveModal(false)} style={{ background: "none", border: "1px solid #1f2d3d", color: "#64748b", padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>Skip</button>
+              <button onClick={() => { if (reportName.trim()) { saveToSupabase(pendingData, reportName.trim()); setShowSaveModal(false); }}} disabled={!reportName.trim()} style={{ background: reportName.trim() ? "#3b82f6" : "#1e2d3d", border: "none", color: reportName.trim() ? "#fff" : "#64748b", padding: "9px 22px", borderRadius: 8, cursor: reportName.trim() ? "pointer" : "default", fontFamily: "inherit", fontSize: 13, fontWeight: 600 }}>Save</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, #1a2332 0%, #0f1117 60%)", borderBottom: "1px solid #1e2d3d", padding: "28px 36px 0" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
+      <div style={{ background: "linear-gradient(180deg, #0d1520 0%, #080c12 100%)", borderBottom: "1px solid #1a2332", padding: "24px 40px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          {/* Left: title + status */}
           <div>
-            <div style={{ fontSize: 11, letterSpacing: 3, color: "#4a9eff", fontFamily: "monospace", marginBottom: 6, textTransform: "uppercase" }}>Readdle · Greenhouse ATS</div>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 400, color: "#fff", letterSpacing: -0.5 }}>Candidate Survey Analytics</h1>
-            <div style={{ fontSize: 13, color: "#6b7a99", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
-              {data.length > 0 ? `${data.length} responses · last updated ${lastUpdated}` : "Upload a Greenhouse CSV export to view analytics"}
-              {saving && <span style={{ fontSize: 11, color: "#eab308" }}>● Saving...</span>}
-              {saveStatus === "saved" && <span style={{ fontSize: 11, color: "#22c55e" }}>● Saved</span>}
-              {saveStatus === "error" && <span style={{ fontSize: 11, color: "#ef4444" }}>● Save failed</span>}
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 500, color: "#f1f5f9", letterSpacing: -0.3 }}>Candidate Survey Analytics</h1>
+            <div style={{ fontSize: 12, color: "#475569", marginTop: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              {data.length > 0 ? `${data.length} responses` : "Upload a CSV to get started"}
+              {saving && <span style={{ color: "#f59e0b" }}>· saving...</span>}
+              {saveStatus === "saved" && <span style={{ color: "#22c55e" }}>· saved</span>}
+              {saveStatus === "error" && <span style={{ color: "#ef4444" }}>· save failed</span>}
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+
+          {/* Right: score + report selector */}
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
             {overallAvg && (
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>Overall Average</div>
-                <div style={{ fontSize: 48, fontWeight: 700, color: scoreLabel(parseFloat(overallAvg)).color, lineHeight: 1 }}>{overallAvg}<span style={{ fontSize: 20, color: "#6b7a99" }}>/5</span></div>
+                <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 2 }}>Avg Score</div>
+                <div style={{ fontSize: 36, fontWeight: 700, color: scoreLabel(parseFloat(overallAvg)).color, lineHeight: 1 }}>{overallAvg}<span style={{ fontSize: 16, color: "#475569", fontWeight: 400 }}>/5</span></div>
               </div>
             )}
             {reports.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <select
-                  value={activeReport?.id || ""}
-                  onChange={e => {
-                    const r = reports.find(r => r.id === parseInt(e.target.value));
-                    if (r) loadReport(r.id, r.name, r.uploaded_at);
-                  }}
-                  style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }}
-                >
-                  {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-                <button onClick={() => activeReport && deleteReport(activeReport.id)} style={{ background: "none", border: "1px solid #ef4444", color: "#ef4444", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
-              </div>
+              <select
+                value={activeReport?.id || ""}
+                onChange={e => {
+                  const r = reports.find(r => r.id === parseInt(e.target.value));
+                  if (r) loadReport(r.id, r.name, r.uploaded_at);
+                }}
+                style={{ background: "#111827", border: "1px solid #1f2d3d", color: "#94a3b8", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}
+              >
+                {reports.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
             )}
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-          {tabs.map(t => (
-            <button key={t} onClick={() => setActiveTab(t)} style={{
-              background: "none", border: "none", padding: "10px 20px", cursor: "pointer", fontSize: 13,
-              color: activeTab === t ? "#4a9eff" : "#6b7a99",
-              borderBottom: activeTab === t ? "2px solid #4a9eff" : "2px solid transparent",
-              textTransform: "capitalize", letterSpacing: 0.5, fontFamily: "inherit"
-            }}>{t === "setup" ? "⚙ Setup" : t.charAt(0).toUpperCase() + t.slice(1)}</button>
-          ))}
+
+        {/* Tabs + filters row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: 0 }}>
+            {tabs.map(t => (
+              <button key={t} onClick={() => setActiveTab(t)} style={{
+                background: "none", border: "none", padding: "10px 18px", cursor: "pointer", fontSize: 13,
+                color: activeTab === t ? "#60a5fa" : "#64748b",
+                borderBottom: activeTab === t ? "2px solid #60a5fa" : "2px solid transparent",
+                fontFamily: "inherit", letterSpacing: 0.3, transition: "color 0.15s"
+              }}>{t === "setup" ? "Setup" : t.charAt(0).toUpperCase() + t.slice(1)}</button>
+            ))}
+          </div>
+
           {data.length > 0 && (
-            <div style={{ marginLeft: "auto", paddingBottom: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, color: "#6b7a99" }}>From</span>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "5px 8px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
-              <span style={{ fontSize: 11, color: "#6b7a99" }}>To</span>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "5px 8px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center", paddingBottom: 10 }}>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ background: "#111827", border: "1px solid #1f2d3d", color: "#94a3b8", padding: "6px 10px", borderRadius: 7, fontSize: 12, fontFamily: "inherit" }} />
+              <span style={{ fontSize: 11, color: "#475569" }}>→</span>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ background: "#111827", border: "1px solid #1f2d3d", color: "#94a3b8", padding: "6px 10px", borderRadius: 7, fontSize: 12, fontFamily: "inherit" }} />
               {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ background: "none", border: "1px solid #1e2d3d", color: "#6b7a99", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>✕ Clear</button>
+                <button onClick={() => { setDateFrom(""); setDateTo(""); }} style={{ background: "none", border: "1px solid #1f2d3d", color: "#64748b", padding: "5px 9px", borderRadius: 7, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>✕</button>
               )}
-              <select value={activeDept} onChange={e => setActiveDept(e.target.value)} style={{ background: "#1a2332", border: "1px solid #1e2d3d", color: "#c8d4e8", padding: "6px 12px", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }}>
+              <select value={activeDept} onChange={e => setActiveDept(e.target.value)} style={{ background: "#111827", border: "1px solid #1f2d3d", color: "#94a3b8", padding: "6px 12px", borderRadius: 7, fontSize: 12, fontFamily: "inherit" }}>
                 {depts.map(d => <option key={d}>{d}</option>)}
               </select>
-              <label style={{ background: "#1a2332", border: "1px solid #4a9eff", color: "#4a9eff", padding: "6px 14px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                ↑ Upload new CSV
+              <label style={{ background: "none", border: "1px solid #3b82f6", color: "#60a5fa", padding: "6px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                ↑ Upload CSV
                 <input type="file" accept=".csv" onChange={handleInputChange} style={{ display: "none" }} />
               </label>
             </div>
@@ -371,59 +385,48 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div style={{ padding: "28px 36px" }}>
+      <div style={{ padding: "28px 40px" }}>
 
+        {/* SETUP TAB */}
         {activeTab === "setup" && (
-          <div style={{ maxWidth: 620 }}>
+          <div style={{ maxWidth: 560 }}>
             <div style={{ marginBottom: 28 }}>
-              <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 500, color: "#fff" }}>Load survey data</h2>
-              <p style={{ margin: 0, color: "#6b7a99", fontSize: 13, lineHeight: 1.6 }}>
-                Export a CSV from Greenhouse and drop it here. Whenever you want to refresh the data — just upload a new file.
-              </p>
+              <h2 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 500, color: "#f1f5f9" }}>Load survey data</h2>
+              <p style={{ margin: 0, color: "#64748b", fontSize: 13, lineHeight: 1.7 }}>Export a CSV from Greenhouse and drop it here. To refresh — just upload a new file.</p>
             </div>
-
             {SETUP_STEPS.map((s, i) => (
-              <div key={i} style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: "#1a2332", border: "1px solid #1e2d3d", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "monospace", fontSize: 12, color: "#4a9eff" }}>{s.n}</div>
+              <div key={i} style={{ display: "flex", gap: 14, marginBottom: 18 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#111827", border: "1px solid #1f2d3d", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "monospace", fontSize: 11, color: "#3b82f6" }}>{s.n}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#e8e8e8", marginBottom: 4 }}>{s.title}</div>
-                  <div style={{ fontSize: 13, color: "#8896b3", lineHeight: 1.6 }}>{s.desc}</div>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: "#e2e8f0", marginBottom: 3 }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>{s.desc}</div>
                 </div>
               </div>
             ))}
-
-            {/* Drop zone */}
             <label
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                border: `2px dashed ${dragOver ? "#4a9eff" : "#1e2d3d"}`,
-                borderRadius: 12, padding: "40px 20px", cursor: "pointer", marginTop: 8,
-                background: dragOver ? "#0d1f33" : "#1a2332", transition: "all 0.2s", textAlign: "center"
+                border: `1.5px dashed ${dragOver ? "#3b82f6" : "#1f2d3d"}`,
+                borderRadius: 12, padding: "44px 20px", cursor: "pointer", marginTop: 8,
+                background: dragOver ? "#0d1f33" : "#0d1520", transition: "all 0.2s", textAlign: "center"
               }}
             >
               <input type="file" accept=".csv" onChange={handleInputChange} style={{ display: "none" }} />
-              <div style={{ fontSize: 36, marginBottom: 12, color: "#4a9eff" }}>↓</div>
-              <div style={{ fontSize: 15, color: "#e8e8e8", fontWeight: 500, marginBottom: 6 }}>
+              <div style={{ fontSize: 28, marginBottom: 10, color: "#3b82f6" }}>↓</div>
+              <div style={{ fontSize: 14, color: "#e2e8f0", fontWeight: 500, marginBottom: 4 }}>
                 {loading ? "Loading..." : "Drop CSV here"}
               </div>
-              <div style={{ fontSize: 12, color: "#6b7a99" }}>or click to browse files</div>
-              {fileName && !loading && (
-                <div style={{ marginTop: 12, fontSize: 12, color: "#4a9eff" }}>✓ {fileName}</div>
-              )}
+              <div style={{ fontSize: 12, color: "#475569" }}>or click to browse files</div>
+              {fileName && !loading && <div style={{ marginTop: 10, fontSize: 12, color: "#3b82f6" }}>✓ {fileName}</div>}
             </label>
-
-            {error && (
-              <div style={{ background: "#2a1515", border: "1px solid #ef4444", borderRadius: 8, padding: "12px 16px", fontSize: 13, color: "#fca5a5", marginTop: 12 }}>
-                ⚠ {error}
-              </div>
-            )}
-
+            {error && <div style={{ background: "#1c0a0a", border: "1px solid #ef4444", borderRadius: 8, padding: "11px 14px", fontSize: 12, color: "#fca5a5", marginTop: 12 }}>⚠ {error}</div>}
             {data.length > 0 && (
-              <div style={{ marginTop: 16, background: "#0f2318", border: "1px solid #22c55e", borderRadius: 8, padding: "12px 16px", fontSize: 13, color: "#86efac" }}>
-              ✓ {data.length} responses loaded · {lastUpdated} <button onClick={() => setActiveTab("overview")} style={{ background: "none", border: "none", color: "#4a9eff", cursor: "pointer", fontSize: 13, fontFamily: "inherit", textDecoration: "underline" }}>Go to dashboard →</button>
+              <div style={{ marginTop: 14, background: "#091c12", border: "1px solid #166534", borderRadius: 8, padding: "11px 14px", fontSize: 12, color: "#86efac", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>✓ {data.length} responses loaded</span>
+                <button onClick={() => setActiveTab("overview")} style={{ background: "none", border: "none", color: "#60a5fa", cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>View dashboard →</button>
               </div>
             )}
           </div>
@@ -432,24 +435,26 @@ export default function Dashboard() {
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && data.length > 0 && (
           <div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 28 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
               {qAvgs.map((q, i) => (
-                <div key={i} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: "16px 14px", borderTop: `3px solid ${q.color}` }}>
-                  <div style={{ fontSize: 32, fontWeight: 700, color: q.color, lineHeight: 1 }}>{q.avg ?? "—"}</div>
-                  <div style={{ fontSize: 10, color: q.color, marginTop: 4, fontWeight: 600 }}>{q.label}</div>
-                  <div style={{ fontSize: 11, color: "#8896b3", marginTop: 8, lineHeight: 1.5 }}>{q.full}</div>
+                <div key={i} style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, padding: "18px 16px", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: q.color, opacity: 0.8 }} />
+                  <div style={{ fontSize: 11, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Q{i+1}</div>
+                  <div style={{ fontSize: 34, fontWeight: 700, color: q.color, lineHeight: 1 }}>{q.avg ?? "—"}</div>
+                  <div style={{ fontSize: 10, color: q.color, marginTop: 4, fontWeight: 600, letterSpacing: 0.5 }}>{q.label}</div>
+                  <div style={{ fontSize: 11, color: "#475569", marginTop: 10, lineHeight: 1.5 }}>{q.full}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-              <div style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: 20 }}>
-                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Average Score by Question</div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={qAvgs.map((q, i) => ({ name: `Q${i + 1}`, avg: q.avg || 0 }))}>
-                    <XAxis dataKey="name" tick={{ fill: "#6b7a99", fontSize: 12 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 5]} tick={{ fill: "#6b7a99", fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "#0f1117", border: "1px solid #1e2d3d", borderRadius: 8, color: "#e8e8e8", fontSize: 12 }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, padding: 22 }}>
+                <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 18 }}>Score by Question</div>
+                <ResponsiveContainer width="100%" height={190}>
+                  <BarChart data={qAvgs.map((q, i) => ({ name: `Q${i + 1}`, avg: q.avg || 0 }))} barSize={32}>
+                    <XAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 5]} tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #1f2d3d", borderRadius: 8, color: "#e2e8f0", fontSize: 12 }} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
                     <Bar dataKey="avg" radius={[4, 4, 0, 0]}>
                       {qAvgs.map((q, i) => <Cell key={i} fill={q.color} />)}
                     </Bar>
@@ -457,22 +462,18 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
 
-              <div style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: 20 }}>
-                <div style={{ fontSize: 11, color: "#6b7a99", letterSpacing: 1, textTransform: "uppercase", marginBottom: 16 }}>Summary</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 13, color: "#8896b3" }}>Overall avg. score</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: overallAvg ? scoreLabel(parseFloat(overallAvg)).color : "#6b7a99" }}>{overallAvg ?? "—"} <span style={{ fontSize: 14, color: "#6b7a99" }}>/ 5</span></div>
+              <div style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, padding: 22, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
+                <div style={{ fontSize: 11, color: "#475569", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Summary</div>
+                {[
+                  { label: "Overall avg. score", value: overallAvg ? `${overallAvg} / 5` : "—", color: overallAvg ? scoreLabel(parseFloat(overallAvg)).color : "#475569" },
+                  { label: "Total responses", value: filtered.length, color: "#60a5fa" },
+                  { label: "Departments", value: deptData.length, color: "#94a3b8" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "#080c12", borderRadius: 8 }}>
+                    <div style={{ fontSize: 13, color: "#64748b" }}>{label}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color }}>{value}</div>
                   </div>
-                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 13, color: "#8896b3" }}>Total responses</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: "#4a9eff" }}>{filtered.length}</div>
-                  </div>
-                  <div style={{ padding: "14px 16px", background: "#0f1117", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 13, color: "#8896b3" }}>Departments</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: "#c8d4e8" }}>{deptData.length}</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -480,32 +481,35 @@ export default function Dashboard() {
 
         {/* QUESTIONS TAB */}
         {activeTab === "questions" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {QUESTIONS.map((q, qi) => {
               const counts = { "Strongly Disagree": 0, "Disagree": 0, "Neutral": 0, "Agree": 0, "Strongly Agree": 0 };
               filtered.forEach(r => { if (r[q.key]) counts[r[q.key]]++; });
               const t = Object.values(counts).reduce((a, b) => a + b, 0);
               const scores = filtered.map(r => toScore(r[q.key])).filter(Boolean);
               const a = scores.length ? parseFloat(avg(scores)) : null;
-              const sl = a ? scoreLabel(a) : { label: "No data", color: "#6b7a99" };
+              const sl = a ? scoreLabel(a) : { label: "No data", color: "#475569" };
               return (
-                <div key={qi} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: 20 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 16 }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: sl.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: sl.color, flexShrink: 0 }}>Q{qi + 1}</div>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 14, color: "#e8e8e8", lineHeight: 1.5 }}>{q.full}</div></div>
+                <div key={qi} style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, padding: 20, position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: sl.color }} />
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 16, paddingLeft: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: "#475569", marginBottom: 5, textTransform: "uppercase", letterSpacing: 1 }}>Q{qi + 1}</div>
+                      <div style={{ fontSize: 14, color: "#e2e8f0", lineHeight: 1.5 }}>{q.full}</div>
+                    </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 28, fontWeight: 700, color: sl.color }}>{a ?? "—"}</div>
-                      <div style={{ fontSize: 10, color: sl.color, fontWeight: 600 }}>{sl.label}</div>
+                      <div style={{ fontSize: 30, fontWeight: 700, color: sl.color, lineHeight: 1 }}>{a ?? "—"}</div>
+                      <div style={{ fontSize: 10, color: sl.color, fontWeight: 600, marginTop: 3 }}>{sl.label}</div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5, paddingLeft: 8 }}>
                     {Object.entries(counts).reverse().map(([label, count]) => (
                       <div key={label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 110, fontSize: 11, color: "#6b7a99", textAlign: "right", flexShrink: 0 }}>{label}</div>
-                        <div style={{ flex: 1, height: 8, background: "#0f1117", borderRadius: 4, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: t > 0 ? `${(count / t) * 100}%` : "0%", background: SCORE_COLOR[SCORE_MAP[label]], borderRadius: 4 }} />
+                        <div style={{ width: 120, fontSize: 11, color: "#475569", textAlign: "right", flexShrink: 0 }}>{label}</div>
+                        <div style={{ flex: 1, height: 7, background: "#080c12", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: t > 0 ? `${(count / t) * 100}%` : "0%", background: SCORE_COLOR[SCORE_MAP[label]], borderRadius: 4, transition: "width 0.4s ease" }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#8896b3", width: 20, textAlign: "right" }}>{count}</div>
+                        <div style={{ fontSize: 11, color: "#64748b", width: 22, textAlign: "right" }}>{count}</div>
                       </div>
                     ))}
                   </div>
@@ -517,7 +521,7 @@ export default function Dashboard() {
 
         {/* DEPARTMENTS TAB */}
         {activeTab === "departments" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 14 }}>
             {deptData.map(({ dept, overall, count }) => {
               const rows = data.filter(r => r.dept === dept);
               const sl = scoreLabel(overall);
@@ -526,24 +530,25 @@ export default function Dashboard() {
                 return s.length ? parseFloat(avg(s)) : 0;
               });
               return (
-                <div key={dept} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 10, padding: 20, borderTop: `3px solid ${sl.color}` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div key={dept} style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, padding: 20, position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: sl.color }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: "#e8e8e8" }}>{dept}</div>
-                      <div style={{ fontSize: 11, color: "#6b7a99", marginTop: 2 }}>{count} response{count !== 1 ? "s" : ""}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>{dept}</div>
+                      <div style={{ fontSize: 11, color: "#475569", marginTop: 3 }}>{count} response{count !== 1 ? "s" : ""}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 26, fontWeight: 700, color: sl.color }}>{overall}</div>
-                      <div style={{ fontSize: 10, color: sl.color }}>{sl.label}</div>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: sl.color, lineHeight: 1 }}>{overall}</div>
+                      <div style={{ fontSize: 10, color: sl.color, marginTop: 2 }}>{sl.label}</div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
                     {qScores.map((qs, i) => (
                       <div key={i} style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ height: 40, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                          <div style={{ width: "60%", background: scoreLabel(qs).color, borderRadius: "3px 3px 0 0", height: `${(qs / 5) * 40}px`, opacity: 0.85 }} />
+                        <div style={{ height: 36, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                          <div style={{ width: "55%", background: scoreLabel(qs).color, borderRadius: "3px 3px 0 0", height: `${(qs / 5) * 36}px`, opacity: 0.75 }} />
                         </div>
-                        <div style={{ fontSize: 9, color: "#6b7a99", marginTop: 3 }}>Q{i + 1}</div>
+                        <div style={{ fontSize: 9, color: "#475569", marginTop: 3 }}>Q{i + 1}</div>
                         <div style={{ fontSize: 10, color: scoreLabel(qs).color, fontWeight: 600 }}>{qs || "—"}</div>
                       </div>
                     ))}
@@ -556,22 +561,21 @@ export default function Dashboard() {
 
         {/* FEEDBACK TAB */}
         {activeTab === "feedback" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Sort controls */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: "#6b7a99" }}>Sort by date:</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#475569", marginRight: 4 }}>Sort:</span>
               {[["Newest first", "desc"], ["Oldest first", "asc"]].map(([label, val]) => (
                 <button key={val} onClick={() => setDateSort(val)} style={{
-                  background: dateSort === val ? "#4a9eff" : "#1a2332",
-                  border: `1px solid ${dateSort === val ? "#4a9eff" : "#1e2d3d"}`,
-                  color: dateSort === val ? "#fff" : "#8896b3",
-                  padding: "4px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontFamily: "inherit"
+                  background: dateSort === val ? "#1e3a5f" : "none",
+                  border: `1px solid ${dateSort === val ? "#3b82f6" : "#1f2d3d"}`,
+                  color: dateSort === val ? "#60a5fa" : "#64748b",
+                  padding: "5px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontFamily: "inherit"
                 }}>{label}</button>
               ))}
             </div>
 
             {filtered.filter(r => r.q1).length === 0 && (
-              <div style={{ color: "#6b7a99", textAlign: "center", padding: 40, fontSize: 14 }}>No written comments for this filter.</div>
+              <div style={{ color: "#475569", textAlign: "center", padding: 48, fontSize: 14 }}>No responses for this filter.</div>
             )}
             {[...filtered].sort((a, b) => {
               const da = new Date(a.date), db = new Date(b.date);
@@ -583,27 +587,25 @@ export default function Dashboard() {
                 text: r[`note${i+1}`]?.trim() || "",
                 score: toScore(r[`q${i+1}`])
               })).filter(n => n.rating);
-
               if (notes.length === 0) return null;
-
               return (
-                <div key={ri} style={{ background: "#1a2332", border: "1px solid #1e2d3d", borderRadius: 12, overflow: "hidden" }}>
-                  <div style={{ padding: "12px 18px", background: "#0f1117", borderBottom: "1px solid #1e2d3d", display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#c8d4e8" }}>{r.dept}</span>
-                    <span style={{ fontSize: 11, color: "#6b7a99" }}>{r.date}</span>
+                <div key={ri} style={{ background: "#0d1520", border: "1px solid #1a2332", borderRadius: 12, overflow: "hidden" }}>
+                  <div style={{ padding: "10px 18px", background: "#080c12", borderBottom: "1px solid #1a2332", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8" }}>{r.dept}</span>
+                    <span style={{ fontSize: 11, color: "#334155", marginLeft: "auto" }}>{r.date}</span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
                     {notes.map((note, ni) => (
                       <div key={ni} style={{
                         padding: "12px 18px",
-                        borderBottom: ni < notes.length - 1 ? "1px solid #1e2d3d" : "none",
-                        borderLeft: `3px solid ${SCORE_COLOR[note.score] || "#4a9eff"}`
+                        borderBottom: ni < notes.length - 1 ? "1px solid #1a2332" : "none",
+                        borderLeft: `3px solid ${SCORE_COLOR[note.score] || "#3b82f6"}`
                       }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: note.text ? 6 : 0 }}>
-                          <div style={{ fontSize: 11, color: "#6b7a99", flex: 1, paddingRight: 12 }}>{note.q}</div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: SCORE_COLOR[note.score] || "#8896b3", flexShrink: 0, background: "#0f1117", padding: "2px 8px", borderRadius: 4 }}>{note.rating}</div>
+                          <div style={{ fontSize: 11, color: "#64748b", flex: 1, paddingRight: 12 }}>{note.q}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: SCORE_COLOR[note.score] || "#64748b", flexShrink: 0, background: "#080c12", padding: "2px 8px", borderRadius: 5 }}>{note.rating}</div>
                         </div>
-                        {note.text && <div style={{ fontSize: 13, color: "#c8d4e8", lineHeight: 1.7 }}>{note.text}</div>}
+                        {note.text && <div style={{ fontSize: 13, color: "#cbd5e1", lineHeight: 1.7 }}>{note.text}</div>}
                       </div>
                     ))}
                   </div>
@@ -612,8 +614,8 @@ export default function Dashboard() {
             })}
           </div>
         )}
-
       </div>
     </div>
   );
+
 }
